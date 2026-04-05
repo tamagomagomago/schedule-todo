@@ -59,12 +59,16 @@ const HOLIDAY_FIXED_AFTERNOON: FixedBlock[] = [
 
 // 起床時刻から朝のブロックを動的生成
 // 順序: 起床(5min) → プロテイン(5min) → ダンベルトレ(20min) → 朝ごはん(15min) → ディープワーク
+// 朝ごはんは起床時刻が07:00より前の場合のみ含める
 function buildMorningBlocks(dayType: DayType, wakeTime: string): FixedBlock[] {
   const wakeMin    = timeToMinutes(wakeTime);
   const proteinMin = wakeMin + 5;   // プロテイン開始（起床5分後）
   const trainMin   = wakeMin + 10;  // ダンベルトレ開始（プロテイン5分）
-  const mealMin    = wakeMin + 30;  // 朝ごはん開始（トレ20分）
-  const deepBase   = wakeMin + 45;  // ディープワーク開始（朝ごはん15分）
+
+  // 起床時刻が07:00より前の場合のみ朝ごはんを含める
+  const includeBreakfast = wakeMin < 420; // 420分 = 07:00
+  const mealMin    = includeBreakfast ? wakeMin + 30 : wakeMin + 25;  // 朝ごはん開始（トレ20分）or トレ終了時
+  const deepBase   = includeBreakfast ? wakeMin + 45 : wakeMin + 25;  // ディープワーク開始
 
   if (dayType === "holiday") {
     const deepMin = deepBase;
@@ -72,8 +76,10 @@ function buildMorningBlocks(dayType: DayType, wakeTime: string): FixedBlock[] {
       { start: wakeTime,                    end: minutesToTime(proteinMin), type: "routine", title: "起床・水1杯・朝日を浴びる" },
       { start: minutesToTime(proteinMin),   end: minutesToTime(trainMin),   type: "meal",    title: "🥛 プロテイン" },
       { start: minutesToTime(trainMin),     end: minutesToTime(mealMin),    type: "fitness", title: "💪 ダンベルトレ（朝トレ）" },
-      { start: minutesToTime(mealMin),      end: minutesToTime(deepMin),    type: "meal",    title: "🍳 朝ごはん・エビオス・身支度" },
     ];
+    if (includeBreakfast) {
+      blocks.push({ start: minutesToTime(mealMin), end: minutesToTime(deepMin), type: "meal", title: "🍳 朝ごはん・エビオス・身支度" });
+    }
     if (deepMin < 720) {
       blocks.push({ start: minutesToTime(deepMin), end: "12:00", type: "deep_work", title: "ディープワーク⚡", is_golden_time: true, is_task_slot: true, time_of_day: "morning" });
     }
@@ -85,8 +91,10 @@ function buildMorningBlocks(dayType: DayType, wakeTime: string): FixedBlock[] {
       { start: wakeTime,                    end: minutesToTime(proteinMin), type: "routine", title: "起床・水1杯・朝日を浴びる" },
       { start: minutesToTime(proteinMin),   end: minutesToTime(trainMin),   type: "meal",    title: "🥛 プロテイン" },
       { start: minutesToTime(trainMin),     end: minutesToTime(mealMin),    type: "fitness", title: "💪 ダンベルトレ（朝トレ）" },
-      { start: minutesToTime(mealMin),      end: minutesToTime(deepMin),    type: "meal",    title: "🍳 朝ごはん・エビオス・身支度準備完了" },
     ];
+    if (includeBreakfast) {
+      blocks.push({ start: minutesToTime(mealMin), end: minutesToTime(deepMin), type: "meal", title: "🍳 朝ごはん・エビオス・身支度準備完了" });
+    }
     if (deepMin < 510) {
       blocks.push({ start: minutesToTime(deepMin), end: "08:30", type: "deep_work", title: "ディープワーク⚡", is_golden_time: true, is_task_slot: true, time_of_day: "morning" });
     }

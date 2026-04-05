@@ -799,6 +799,18 @@ export default function GoalPanel() {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">補足・戦略メモ</label>
+                <textarea
+                  placeholder="目標達成のための戦略、注意点など（オプション）"
+                  value={form.description ?? ""}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full bg-gray-700 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={2}
+                />
+              </div>
+
               <div className="flex gap-2">
                 <button
                   onClick={handleSubmit}

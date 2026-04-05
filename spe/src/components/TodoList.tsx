@@ -103,6 +103,15 @@ function MasterTodoCard({
   onEdit: (todo: Todo) => void;
   onDelete: (id: number) => void;
 }) {
+  const [isChecked, setIsChecked] = useState(false);
+
+  const handleCheckChange = (checked: boolean) => {
+    setIsChecked(checked);
+    if (checked) {
+      onMoveToToday(todo.id);
+    }
+  };
+
   const priorityLabel = numToLabel(todo.priority);
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-2.5 hover:border-gray-600 transition-colors">
@@ -122,12 +131,15 @@ function MasterTodoCard({
           </div>
         </div>
         <div className="flex flex-col gap-1 shrink-0">
-          <button
-            onClick={() => onMoveToToday(todo.id)}
-            className="text-xs bg-blue-800 hover:bg-blue-700 text-blue-200 px-2 py-1 rounded transition-colors whitespace-nowrap"
-          >
-            今日へ →
-          </button>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={(e) => handleCheckChange(e.target.checked)}
+              className="w-4 h-4 rounded border border-gray-600 bg-gray-700 cursor-pointer"
+            />
+            <span className="text-xs text-blue-300">今日へ</span>
+          </label>
           <div className="flex gap-1 justify-end">
             <button
               onClick={() => onEdit(todo)}
