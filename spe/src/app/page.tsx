@@ -240,10 +240,7 @@ export default function Home() {
 
         {/* TODO + タイムライン ← スクロール対象（日中） */}
         <div ref={todoRef} className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <TodoList
-            onStartTimer={handleStartTimer}
-            activeTimerTodoId={activeTimer?.todoId ?? null}
-          />
+          <TodoList />
           <DailyTimeline date={date} dayType={dayType} wakeTime={wakeTime} />
         </div>
 

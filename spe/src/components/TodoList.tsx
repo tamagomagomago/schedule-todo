@@ -168,9 +168,6 @@ function TodayTodoCard({
   onSetPreferredTime,
   onSetPriority,
   onEditTitle,
-  onStartTimer,
-  isTimerRunning,
-  hasActiveTimer,
 }: {
   todo: Todo;
   onToggle: (id: number, completed: boolean) => void;
@@ -178,9 +175,6 @@ function TodayTodoCard({
   onSetPreferredTime: (id: number, t: PreferredTime | null) => void;
   onSetPriority: (id: number, p: number) => void;
   onEditTitle: (id: number, title: string) => void;
-  onStartTimer?: (todo: Todo) => void;
-  isTimerRunning?: boolean;
-  hasActiveTimer?: boolean;
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(todo.title);
@@ -293,23 +287,6 @@ function TodayTodoCard({
           )}
         </div>
         <div className="flex flex-col gap-1 shrink-0 items-end">
-          {/* タイマーボタン（未完了のみ） */}
-          {!todo.is_completed && onStartTimer && (
-            <button
-              onClick={() => !isTimerRunning && !hasActiveTimer && onStartTimer(todo)}
-              disabled={hasActiveTimer && !isTimerRunning}
-              className={`text-xs px-2 py-1 rounded transition-colors ${
-                isTimerRunning
-                  ? "text-blue-400 bg-blue-900/40 border border-blue-700/50 cursor-default"
-                  : hasActiveTimer
-                  ? "text-gray-600 cursor-not-allowed"
-                  : "text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700"
-              }`}
-              title={isTimerRunning ? "計測中" : "タイマー開始"}
-            >
-              {isTimerRunning ? "⏱ 計測中" : "▶"}
-            </button>
-          )}
           <button
             onClick={() => onRemove(todo.id)}
             className="text-gray-600 hover:text-gray-400 text-xs"
@@ -368,13 +345,7 @@ function GeneratedTodoCard({
   );
 }
 
-export default function TodoList({
-  onStartTimer,
-  activeTimerTodoId,
-}: {
-  onStartTimer?: (todo: import("@/types").Todo) => void;
-  activeTimerTodoId?: number | null;
-} = {}) {
+export default function TodoList() {
   const [masterTodos, setMasterTodos] = useState<Todo[]>([]);
   const [todayTodos, setTodayTodos] = useState<Todo[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -1055,9 +1026,6 @@ export default function TodoList({
                                 onSetPreferredTime={handleSetPreferredTime}
                                 onSetPriority={handleSetPriority}
                                 onEditTitle={handleEditTitle}
-                                onStartTimer={onStartTimer}
-                                isTimerRunning={activeTimerTodoId === todo.id}
-                                hasActiveTimer={!!activeTimerTodoId}
                               />
                             </div>
                           );
