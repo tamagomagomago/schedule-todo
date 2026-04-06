@@ -166,7 +166,12 @@ function VisualGoalCard({
       });
       if (res.ok) {
         await fetchImages();
+      } else {
+        const error = await res.json().catch(() => ({ error: "アップロード失敗" }));
+        alert(`画像アップロード失敗: ${error.error || "詳細不明"}`);
       }
+    } catch (err) {
+      alert(`アップロードエラー: ${err instanceof Error ? err.message : "詳細不明"}`);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
