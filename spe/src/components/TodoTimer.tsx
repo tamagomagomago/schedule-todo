@@ -41,20 +41,39 @@ export default function TodoTimer({
   onStop: (durationSeconds: number) => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
-  const notifiedRef = useRef(false);
+  const notificationCountRef = useRef(0);
+  const lastNotificationTimeRef = useRef(0);
   const totalSec = timer.estimatedMinutes * 60;
 
-  useEffect(() => {
-    const tick = () => {
-      const s = Math.floor((Date.now() - timer.startedAt) / 1000);
-      setElapsed(s);
-      if (s >= totalSec && !notifiedRef.current) {
-        notifiedRef.current = true;
+  const sendNotifications = (count: number) => {
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
         fetch("/api/timer/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: timer.todoTitle, minutes: timer.estimatedMinutes }),
         });
+      }, i * 150);
+    }
+  };
+
+  useEffect(() => {
+    const tick = () => {
+      const s = Math.floor((Date.now() - timer.startedAt) / 1000);
+      setElapsed(s);
+
+      if (s >= totalSec) {
+        // 初回：0秒に達したら3つの通知
+        if (notificationCountRef.current === 0) {
+          sendNotifications(3);
+          notificationCountRef.current = 1;
+          lastNotificationTimeRef.current = s;
+        }
+        // その後：5分（300秒）ごとに2つの通知
+        else if (s - lastNotificationTimeRef.current >= 300) {
+          sendNotifications(2);
+          lastNotificationTimeRef.current = s;
+        }
       }
     };
     tick();
