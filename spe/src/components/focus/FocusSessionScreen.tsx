@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FocusMode, FocusSession } from "@/types";
+import { FocusMode, FocusSession, Todo } from "@/types";
 import FocusTimerDisplay from "./FocusTimerDisplay";
 import FocusModeSelector from "./FocusModeSelector";
+import FocusTaskSelector from "./FocusTaskSelector";
 
 type SessionState = "setup" | "active" | "completed" | "break";
 
@@ -21,6 +22,7 @@ export default function FocusSessionScreen({ userId, onClose }: FocusSessionScre
   const [currentSession, setCurrentSession] = useState<FocusSession | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [breakRemaining, setBreakRemaining] = useState(0);
+  const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch modes on mount
@@ -194,6 +196,14 @@ export default function FocusSessionScreen({ userId, onClose }: FocusSessionScre
               }}
             />
 
+            {/* Task Selection */}
+            <div className="mt-6">
+              <FocusTaskSelector
+                onTaskSelect={setSelectedTask}
+                selectedTask={selectedTask}
+              />
+            </div>
+
             {/* Time Selection */}
             <div className="mt-6">
               <label className="block text-sm font-medium mb-3">時間選択:</label>
@@ -261,6 +271,15 @@ export default function FocusSessionScreen({ userId, onClose }: FocusSessionScre
             <p className="text-sm text-gray-400 mb-2">
               {currentSession.mode_name} | {new Date(currentSession.start_time).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })} 開始
             </p>
+
+            {/* Selected Focus Task */}
+            {selectedTask && (
+              <div className="bg-red-600/20 border border-red-500/50 rounded-lg p-3 mb-4">
+                <p className="text-xs text-red-300 mb-1">🎯 フォーカスタスク</p>
+                <p className="text-sm font-semibold text-red-100">{selectedTask.title}</p>
+                <p className="text-xs text-red-200/70">{selectedTask.estimated_minutes}分</p>
+              </div>
+            )}
 
             <FocusTimerDisplay elapsedSeconds={elapsedSeconds} />
 
