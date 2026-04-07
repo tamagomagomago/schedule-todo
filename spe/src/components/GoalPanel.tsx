@@ -596,7 +596,7 @@ function BreakdownModal({
 // ----------------------
 export default function GoalPanel() {
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<CreateGoalInput>(EMPTY_FORM);
   const [editId, setEditId] = useState<number | null>(null);

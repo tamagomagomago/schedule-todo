@@ -332,9 +332,6 @@ export default function Home() {
             {/* 日曜日：週次レビューを最上部に強調表示 */}
             {isReviewDay && <WeeklyReviewPanel featured={true} />}
 
-            {/* 使い方ガイド */}
-            <HowToPanel />
-
             {/* Today's Mission */}
             <TodayMission
               onStartTimer={handleStartTimer}
@@ -354,6 +351,9 @@ export default function Home() {
 
             {/* 時間記録・統計 */}
             <TimeStatsPanel />
+
+            {/* 使い方ガイド */}
+            <HowToPanel />
 
             {/* 天気 */}
             <WeatherPanel city="Tokyo" />
