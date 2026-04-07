@@ -265,7 +265,7 @@ export default function Home() {
         {/* ===== TODO & 集中 タブ ===== */}
         {currentTab === "todo" && (
           <>
-            {/* 集中を始める - 独立セクション */}
+            {/* 深く集中する - 独立セクション */}
             <div className="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           <div className="p-4 border-b border-gray-800">
             <div className="flex items-center gap-3">
