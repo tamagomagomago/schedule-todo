@@ -186,6 +186,9 @@ function TodayTodoCard({
   onSetPriority,
   onEditTitle,
   onSetFocus,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: {
   todo: Todo;
   onToggle: (id: number, completed: boolean) => void;
@@ -194,6 +197,9 @@ function TodayTodoCard({
   onSetPriority: (id: number, p: number) => void;
   onEditTitle: (id: number, title: string) => void;
   onSetFocus: (todo: Todo) => void;
+  onDragStart?: (id: number, e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (id: number, e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop?: (id: number, e: React.DragEvent<HTMLDivElement>) => void;
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(todo.title);
@@ -214,8 +220,18 @@ function TodayTodoCard({
 
   return (
     <div
+      draggable={!todo.is_completed}
+      onDragStart={(e) => onDragStart?.(todo.id, e)}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver?.(todo.id, e);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop?.(todo.id, e);
+      }}
       className={`bg-gray-800 border rounded-lg p-2.5 transition-all ${
-        todo.is_completed ? "border-gray-700 opacity-60" : "border-gray-600"
+        todo.is_completed ? "border-gray-700 opacity-60" : "border-gray-600 cursor-move hover:border-blue-500/50"
       }`}
     >
       <div className="flex items-start gap-2">
@@ -395,6 +411,11 @@ export default function TodoList() {
 
   const [loading, setLoading] = useState(false);
 
+  // ドラッグアンドドロップ状態
+  const [draggedTodoId, setDraggedTodoId] = useState<number | null>(null);
+  const [dragOverTodoId, setDragOverTodoId] = useState<number | null>(null);
+  const [todoOrderMap, setTodoOrderMap] = useState<Record<number, number>>({});
+
   // シングルフォーカスを設定
   const handleSetFocus = useCallback((todo: Todo) => {
     try {
@@ -403,6 +424,56 @@ export default function TodoList() {
       window.dispatchEvent(new CustomEvent("focusTaskChanged", { detail: todo }));
     } catch {}
   }, []);
+
+  // ドラッグアンドドロップハンドラー
+  const handleTodoDragStart = useCallback((id: number, e: React.DragEvent<HTMLDivElement>) => {
+    setDraggedTodoId(id);
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const handleTodoDragOver = useCallback((id: number, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverTodoId(id);
+  }, []);
+
+  const handleTodoDrop = useCallback((targetId: number, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!draggedTodoId || draggedTodoId === targetId) {
+      setDraggedTodoId(null);
+      setDragOverTodoId(null);
+      return;
+    }
+
+    // TODOの順序を更新
+    const draggedIndex = todayTodos.findIndex((t) => t.id === draggedTodoId);
+    const targetIndex = todayTodos.findIndex((t) => t.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedTodoId(null);
+      setDragOverTodoId(null);
+      return;
+    }
+
+    const newTodos = [...todayTodos];
+    const [draggedTodo] = newTodos.splice(draggedIndex, 1);
+    newTodos.splice(targetIndex, 0, draggedTodo);
+
+    setTodayTodos(newTodos);
+
+    // 新しい順序をlocalStorageに保存
+    const newOrderMap: Record<number, number> = {};
+    newTodos.forEach((todo, index) => {
+      newOrderMap[todo.id] = index;
+    });
+    setTodoOrderMap(newOrderMap);
+    try {
+      localStorage.setItem("spe-todo-order", JSON.stringify(newOrderMap));
+    } catch {}
+
+    setDraggedTodoId(null);
+    setDragOverTodoId(null);
+  }, [draggedTodoId, todayTodos]);
 
   const fetchTodos = useCallback(async () => {
     try {
@@ -421,6 +492,28 @@ export default function TodoList() {
 
   useEffect(() => {
     fetchTodos();
+    // localStorage から順序を復元
+    try {
+      const saved = localStorage.getItem("spe-todo-order");
+      if (saved) {
+        setTodoOrderMap(JSON.parse(saved));
+      }
+    } catch {}
+  }, []);
+
+  // TODOが変更されたときに順序をリセット（新しい日付）
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const lastDateKey = "spe-todo-order-date";
+    try {
+      const lastDate = localStorage.getItem(lastDateKey);
+      if (lastDate !== today) {
+        // 新しい日付、順序をリセット
+        localStorage.setItem(lastDateKey, today);
+        localStorage.removeItem("spe-todo-order");
+        setTodoOrderMap({});
+      }
+    } catch {}
   }, []);
 
   // フォーム送信
@@ -1300,7 +1393,12 @@ export default function TodoList() {
                     .filter((t) =>
                       key === null ? !t.preferred_time : t.preferred_time === key
                     )
-                    .sort((a, b) => a.priority - b.priority);
+                    .sort((a, b) => {
+                      // Use manual order if available, otherwise sort by priority
+                      const orderA = todoOrderMap[a.id] ?? a.priority;
+                      const orderB = todoOrderMap[b.id] ?? b.priority;
+                      return orderA - orderB;
+                    });
                   if (sectionTodos.length === 0) return null;
                   return (
                     <div key={String(key)} className="mb-3">
@@ -1330,6 +1428,9 @@ export default function TodoList() {
                                 onSetPriority={handleSetPriority}
                                 onEditTitle={handleEditTitle}
                                 onSetFocus={handleSetFocus}
+                                onDragStart={handleTodoDragStart}
+                                onDragOver={handleTodoDragOver}
+                                onDrop={handleTodoDrop}
                               />
                             </div>
                           );
@@ -1358,6 +1459,9 @@ export default function TodoList() {
                             onSetPriority={handleSetPriority}
                             onEditTitle={handleEditTitle}
                             onSetFocus={handleSetFocus}
+                            onDragStart={handleTodoDragStart}
+                            onDragOver={handleTodoDragOver}
+                            onDrop={handleTodoDrop}
                           />
                         ))}
                     </div>

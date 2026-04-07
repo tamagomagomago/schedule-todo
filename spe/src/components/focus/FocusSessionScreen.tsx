@@ -171,16 +171,43 @@ export default function FocusSessionScreen({ userId, onClose }: FocusSessionScre
 
       setState("break");
       setBreakRemaining(breakMinutes * 60);
-      // Show notification
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("集中セッション完了！", {
-          body: `実際の集中時間: ${currentSession.actual_minutes}分`,
-        });
-      }
     } catch (e) {
       console.error("Failed to start break:", e);
     }
   };
+
+  // Persistent notifications when session completes
+  useEffect(() => {
+    if (state !== "completed" || !currentSession) return;
+
+    // Send 4 notifications immediately
+    const sendNotification = () => {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("✨ 集中セッション完了！", {
+          body: `実際の集中時間: ${currentSession.actual_minutes}分`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>✨</text></svg>",
+          requireInteraction: true,
+        });
+      }
+    };
+
+    // Send 4 notifications at completion
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => {
+        sendNotification();
+      }, i * 300); // 300ms apart
+    }
+
+    // Then send notifications every 5 minutes
+    const intervalId = setInterval(
+      () => {
+        sendNotification();
+      },
+      5 * 60 * 1000 // 5 minutes
+    );
+
+    return () => clearInterval(intervalId);
+  }, [state, currentSession]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4">
