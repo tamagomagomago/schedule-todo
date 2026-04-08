@@ -88,6 +88,8 @@ export interface Goal {
   end_date: string;
   is_achieved: boolean;
   parent_id?: number | null;
+  breakdown_config?: Record<string, number> | null;
+  decomposed_at?: string | null;
   created_at: string;
   updated_at: string;
 }
