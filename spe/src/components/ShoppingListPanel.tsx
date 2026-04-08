@@ -128,9 +128,9 @@ export default function ShoppingListPanel() {
       </button>
 
       {open && (
-      <div className="px-4 py-3 border-b border-gray-800">
-
-        {/* 追加フォーム */}
+        <>
+          <div className="px-4 py-3 border-b border-gray-800">
+            {/* 追加フォーム */}
         <form onSubmit={handleAddItem} className="space-y-2 bg-gray-800 p-3 rounded-lg">
           <input
             placeholder="買うものを入力"
@@ -267,6 +267,7 @@ export default function ShoppingListPanel() {
             ))
           )}
         </div>
+        </>
       )}
     </div>
   );
