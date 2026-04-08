@@ -17,6 +17,7 @@ import TodayMission from "@/components/TodayMission";
 import DailyRoutinePanel from "@/components/DailyRoutinePanel";
 import TodoTimer, { ActiveTimer } from "@/components/TodoTimer";
 import TimeStatsPanel from "@/components/TimeStatsPanel";
+import ShoppingListPanel from "@/components/ShoppingListPanel";
 
 const TIMER_LS_KEY = "spe-active-timer";
 
@@ -342,6 +343,9 @@ export default function Home() {
             <div ref={routineRef}>
               <DailyRoutinePanel wakeTime={wakeTime} dayType={dayType} />
             </div>
+
+            {/* ShoppingListPanel */}
+            <ShoppingListPanel />
 
             {/* GoalPanel */}
             <GoalPanel />
