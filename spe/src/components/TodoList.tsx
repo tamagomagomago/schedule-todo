@@ -421,6 +421,48 @@ function TodayTodoCard({
 }
 
 // 生成されたTODOカード（プレビュー用）
+// 週次目標進捗セクション（再利用可能）
+function WeeklyGoalsProgressSection({ goals }: { goals: any[] }) {
+  if (goals.length === 0) return null;
+
+  return (
+    <div className="px-3 py-3 border-b border-gray-800">
+      <p className="text-xs font-semibold text-green-400 mb-2">📊 今週の目標進捗</p>
+      <div className="space-y-2">
+        {goals.map((goal) => {
+          const progress = goal.target_value ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100)) : 0;
+          return (
+            <div key={goal.id} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-300 truncate">
+                  {goal.title}
+                </span>
+                <span className="text-xs text-gray-500 shrink-0 ml-1">
+                  {goal.current_value ?? 0}/{goal.target_value ?? "?"}{goal.unit ?? ""}
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    progress >= 80
+                      ? "bg-green-500"
+                      : progress >= 40
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                  }`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="text-right text-xs text-gray-600">{progress}%</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// 生成されたTODOカード（プレビュー用）
 function GeneratedTodoCard({
   todo,
   onAdd,
@@ -473,6 +515,8 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
   const [masterTodos, setMasterTodos] = useState<Todo[]>([]);
   const [todayTodos, setTodayTodos] = useState<Todo[]>([]);
   const [weeklyGoals, setWeeklyGoals] = useState<any[]>([]);
+  const [allGoals, setAllGoals] = useState<any[]>([]);
+  const [expandedGoals, setExpandedGoals] = useState<Record<number, boolean>>({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm] = useState<CreateTodoInput>(emptyForm());
   const [editId, setEditId] = useState<number | null>(null);
@@ -482,7 +526,7 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
   const [todayFormCat, setTodayFormCat] = useState<string>("personal");
   const [todayFormCustomCat, setTodayFormCustomCat] = useState(false);
   const [todayFormStartTime, setTodayFormStartTime] = useState<string>("");
-  const [currentTab, setCurrentTab] = useState<"weekly" | "today">("weekly");
+  const [currentTab, setCurrentTab] = useState<"weekly" | "today" | "goals">("weekly");
   const [sortByDue, setSortByDue] = useState(false);
 
   // AI生成
@@ -600,21 +644,26 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
     } catch {}
   }, []);
 
-  // 週別目標をフェッチ
+  // 目標をフェッチ（週別+全目標）
   useEffect(() => {
-    const fetchWeeklyGoals = async () => {
+    const fetchGoals = async () => {
       try {
         const res = await fetch("/api/goals");
         if (res.ok) {
           const data = await res.json();
-          const weekly = Array.isArray(data) ? data.filter((g: any) => g.period_type === "weekly") : [];
-          setWeeklyGoals(weekly);
+          if (Array.isArray(data)) {
+            // 全目標を保存
+            setAllGoals(data);
+            // 週次目標のみを weeklyGoals に保存
+            const weekly = data.filter((g: any) => g.period_type === "weekly");
+            setWeeklyGoals(weekly);
+          }
         }
       } catch (err) {
-        console.error("Failed to fetch weekly goals:", err);
+        console.error("Failed to fetch goals:", err);
       }
     };
-    fetchWeeklyGoals();
+    fetchGoals();
   }, []);
 
   // フォーム送信
@@ -903,7 +952,7 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
         </div>
 
         {/* タブ */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setCurrentTab("weekly")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -923,6 +972,16 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
             }`}
           >
             📅 今日のTODO ({todayTodos.filter(t => !t.is_completed).length}件)
+          </button>
+          <button
+            onClick={() => setCurrentTab("goals")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              currentTab === "goals"
+                ? "bg-blue-700 text-white border border-blue-600"
+                : "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600"
+            }`}
+          >
+            🎯 目標進捗 ({allGoals.length}件)
           </button>
         </div>
       </div>
@@ -1613,41 +1672,7 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
           </div>
 
           {/* 今週の目標進捗 */}
-          {weeklyGoals.length > 0 && (
-            <div className="px-3 py-3 border-b border-gray-800">
-              <p className="text-xs font-semibold text-green-400 mb-2">📊 今週の目標進捗</p>
-              <div className="space-y-2">
-                {weeklyGoals.map((goal) => {
-                  const progress = goal.target_value ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100)) : 0;
-                  return (
-                    <div key={goal.id} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-300 truncate">
-                          {goal.title}
-                        </span>
-                        <span className="text-xs text-gray-500 shrink-0 ml-1">
-                          {goal.current_value ?? 0}/{goal.target_value ?? "?"}{goal.unit ?? ""}
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            progress >= 80
-                              ? "bg-green-500"
-                              : progress >= 40
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
-                          }`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                      <div className="text-right text-xs text-gray-600">{progress}%</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <WeeklyGoalsProgressSection goals={weeklyGoals} />
 
           <div className="px-3 py-2 flex-1">
             {todayTodos.length === 0 ? (
@@ -1747,6 +1772,154 @@ export default function TodoList({ selectedFocusTask }: TodoListProps = {}) {
                     </div>
                   </details>
                 )}
+              </>
+            )}
+          </div>
+        </div>
+        )}
+
+        {/* ===== 目標進捗 タブ ===== */}
+        {currentTab === "goals" && (
+        <div className="flex flex-col h-full">
+          <div className="px-3 py-2 border-b border-gray-800">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                目標進捗
+              </span>
+              <span className="text-xs text-gray-600">({allGoals.length}件)</span>
+            </div>
+          </div>
+
+          <div className="px-3 py-3 flex-1 overflow-y-auto space-y-3">
+            {allGoals.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-600 text-xs">目標がまだありません</p>
+                <p className="text-gray-700 text-xs mt-1">← 左の「目標管理（OKR）」から作成</p>
+              </div>
+            ) : (
+              <>
+                {/* 年間目標 */}
+                {(() => {
+                  const annualGoals = allGoals.filter(g => g.period_type === "annual");
+                  if (annualGoals.length === 0) return null;
+
+                  return (
+                    <div>
+                      <p className="text-xs font-semibold text-purple-400 mb-2">📊 年間目標</p>
+                      <div className="space-y-2 ml-2">
+                        {annualGoals.map((goal) => {
+                          const progress = goal.target_value ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100)) : 0;
+                          const isExpanded = expandedGoals[goal.id];
+                          const monthlyGoals = allGoals.filter(g => g.period_type === "monthly" && g.parent_id === goal.id);
+
+                          return (
+                            <div key={goal.id} className="border border-gray-700 rounded-lg p-2.5">
+                              <button
+                                onClick={() => setExpandedGoals(prev => ({ ...prev, [goal.id]: !isExpanded }))}
+                                className="w-full text-left"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">{isExpanded ? "▼" : "▶"}</span>
+                                  <span className="text-xs text-gray-300 flex-1">{goal.title}</span>
+                                  <span className="text-xs text-gray-500">{goal.current_value ?? 0}/{goal.target_value ?? "?"}{goal.unit ?? ""}</span>
+                                </div>
+                              </button>
+                              <div className="mt-1.5 ml-4">
+                                <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full transition-all duration-300 ${
+                                      progress >= 80
+                                        ? "bg-purple-500"
+                                        : progress >= 40
+                                        ? "bg-yellow-500"
+                                        : "bg-red-500"
+                                    }`}
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                                <div className="text-right text-xs text-gray-600 mt-0.5">{progress}%</div>
+                              </div>
+
+                              {/* 月次目標 */}
+                              {isExpanded && monthlyGoals.length > 0 && (
+                                <div className="mt-2 ml-2 border-l border-gray-700 pl-2 space-y-2">
+                                  <p className="text-xs font-semibold text-blue-400">📌 月次目標</p>
+                                  {monthlyGoals.map((monthlyGoal) => {
+                                    const monthProgress = monthlyGoal.target_value ? Math.min(100, Math.round((monthlyGoal.current_value / monthlyGoal.target_value) * 100)) : 0;
+                                    const monthExpanded = expandedGoals[monthlyGoal.id];
+                                    const weeklyGoalsData = allGoals.filter(g => g.period_type === "weekly" && g.parent_id === monthlyGoal.id);
+
+                                    return (
+                                      <div key={monthlyGoal.id} className="bg-gray-800/50 rounded p-2">
+                                        <button
+                                          onClick={() => setExpandedGoals(prev => ({ ...prev, [monthlyGoal.id]: !monthExpanded }))}
+                                          className="w-full text-left"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-500">{monthExpanded ? "▼" : "▶"}</span>
+                                            <span className="text-xs text-gray-300 flex-1">{monthlyGoal.title}</span>
+                                            <span className="text-xs text-gray-600">{monthlyGoal.current_value ?? 0}/{monthlyGoal.target_value ?? "?"}{monthlyGoal.unit ?? ""}</span>
+                                          </div>
+                                        </button>
+                                        <div className="mt-1 ml-4">
+                                          <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+                                            <div
+                                              className={`h-full transition-all duration-300 ${
+                                                monthProgress >= 80
+                                                  ? "bg-blue-500"
+                                                  : monthProgress >= 40
+                                                  ? "bg-yellow-500"
+                                                  : "bg-red-500"
+                                              }`}
+                                              style={{ width: `${monthProgress}%` }}
+                                            />
+                                          </div>
+                                          <div className="text-right text-xs text-gray-700 mt-0.5">{monthProgress}%</div>
+                                        </div>
+
+                                        {/* 週次目標 */}
+                                        {monthExpanded && weeklyGoalsData.length > 0 && (
+                                          <div className="mt-2 ml-2 border-l border-gray-700 pl-2 space-y-1">
+                                            <p className="text-xs font-semibold text-green-400">📅 週次目標</p>
+                                            {weeklyGoalsData.map((weeklyGoal) => {
+                                              const weekProgress = weeklyGoal.target_value ? Math.min(100, Math.round((weeklyGoal.current_value / weeklyGoal.target_value) * 100)) : 0;
+
+                                              return (
+                                                <div key={weeklyGoal.id} className="bg-gray-900/50 rounded p-1.5">
+                                                  <div className="flex items-center justify-between mb-0.5">
+                                                    <span className="text-xs text-gray-400">{weeklyGoal.title}</span>
+                                                    <span className="text-xs text-gray-600">{weeklyGoal.current_value ?? 0}/{weeklyGoal.target_value ?? "?"}{weeklyGoal.unit ?? ""}</span>
+                                                  </div>
+                                                  <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+                                                    <div
+                                                      className={`h-full transition-all duration-300 ${
+                                                        weekProgress >= 80
+                                                          ? "bg-green-500"
+                                                          : weekProgress >= 40
+                                                          ? "bg-yellow-500"
+                                                          : "bg-red-500"
+                                                      }`}
+                                                      style={{ width: `${weekProgress}%` }}
+                                                    />
+                                                  </div>
+                                                  <div className="text-right text-xs text-gray-700 mt-0.5">{weekProgress}%</div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>
