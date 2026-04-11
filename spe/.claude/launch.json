@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "name": "spe-dev",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/Users/hiroto_nakamura/Documents/Anthropic/claude-code/routine_schedule/spe/start-dev.sh"],
       "port": 3000
     }
   ]
